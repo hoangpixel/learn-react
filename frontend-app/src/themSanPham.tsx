@@ -10,9 +10,9 @@ const App = () => {
             <div className="flex bg-white-500 gap-3">
                 <div className="bg-white p-5 rounded-lg w-1/2">
                         <label htmlFor="">Tên sản phẩm: </label>
-                        <input type="text" className="w-full p-2" value={tenSanPham} onChange={(e) => {setTenSanPham(e.target.value)}}/> <hr />
+                        <input type="text" className="w-full p-2 border" value={tenSanPham} onChange={(e) => {setTenSanPham(e.target.value)}}/> <hr />
                         <label htmlFor="">Giá sản phẩm: </label>
-                        <input type="text" className="w-full p-2" value={giaTien} onChange={(e) => {setGiaTien(e.target.valueAsNumber)}}/>
+                        <input type="number" className="w-full p-2 border" value={giaTien} onChange={(e) => {setGiaTien(e.target.valueAsNumber)}}/>
                 </div>
                 <div className="bg-white p-5 rounded-lg w-1/2">
                         <p>Tên sản phẩm : </p>
