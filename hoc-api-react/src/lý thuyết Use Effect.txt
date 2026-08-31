@@ -1,0 +1,12 @@
+Thằng useEffect sinh ra để làm một nhiệm vụ duy nhất: Ra lệnh cho web tự động đi lấy dữ liệu ngay khi vừa tải xong giao diện, 
+thay vì phải chờ người dùng bấm nút.
+
+Quy trình 3 bước gọi API chuẩn kỹ sư:
+
+Tạo hộp rỗng: Dùng useState khởi tạo một mảng rỗng [] để chờ hứng dữ liệu.
+
+Gọi đò: Dùng useEffect chứa hàm fetch() gọi xuống Backend. 
+Cú pháp bắt buộc phải có một cái mảng rỗng [] ở cuối để nó chỉ gọi API đúng 1 lần lúc mới mở web, 
+nếu quên cái này nó sẽ gọi liên tục làm sập server.
+
+Cập nhật giao diện: Lấy data trả về đập vào hàm set..., React sẽ tự động bung dữ liệu ra màn hình.
