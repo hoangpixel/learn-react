@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import axiosClient from '../services/axiosClient';
 
 const ProductPage = () => {
+  const token = localStorage.getItem('token');
+  if(!token)
+  {
+    return <Navigate to="/login" />;
+  }
+
   const [products, setProducts] = useState<any[]>([]);
 
   useEffect(() => {

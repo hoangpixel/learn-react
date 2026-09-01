@@ -1,9 +1,18 @@
 import { useState } from 'react';
 import axiosClient from '../services/axiosClient';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
+  const navigate = useNavigate();
+  const token = localStorage.getItem('token');
+  if(token)
+  {
+    return <Navigate to="/products" />;
+  }
+  
 
   const handleLogin = async () => {
     try {
@@ -17,8 +26,9 @@ const LoginPage = () => {
       
       // Lưu vào két sắt của trình duyệt
       localStorage.setItem('token', token);
+      navigate('/products');
       alert('Đăng nhập thành công! Đã cất vé VIP.');
-      window.location.reload();
+
       
     } catch (error) {
       alert('Sai tài khoản hoặc mật khẩu!');
@@ -50,6 +60,8 @@ const LoginPage = () => {
         >
           Vào Hệ Thống
         </button>
+
+        <Link to="/register" className="text-blue-500 underline">Đăng ký tài khoản</Link>
       </div>
     </div>
   );
