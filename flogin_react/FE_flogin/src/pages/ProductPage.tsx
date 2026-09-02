@@ -1,39 +1,42 @@
 import { useEffect, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import type { Product } from '../interfaces/product.type';
+import { Navigate } from 'react-router-dom';
 import axiosClient from '../services/axiosClient';
+import Pagination from '../components/Pagination';
 
 const ProductPage = () => {
   const token = localStorage.getItem('token');
-  if(!token)
-  {
+  
+  if(!token) {
     return <Navigate to="/login" />;
   }
 
-  const [products, setProducts] = useState<any[]>([]);
+  // Đã thêm mảng rỗng [] vào trong ngoặc tròn
+  const [products, setProducts] = useState<Product[]>([]);
+
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
-    // Tương lai sếp mở comment đoạn này để gọi API thật từ Spring Boot:
-    // const fetchProducts = async () => {
-    //   try {
-    //     const res = await axiosClient.get('/products');
-    //     setProducts(res.data);
-    //   } catch (error) {
-    //     console.error("Lỗi lấy data", error);
-    //   }
-    // };
-    // fetchProducts();
+    // 1. Khai báo hàm
+    const fetchProduct = async () => {
+      try {
+        const res = await axiosClient.get(`/products?page=${currentPage}&size=5`);
+        setProducts(res.data.content);
+        setTotalPages(res.data.totalPages);
+      } catch(error) {
+        alert("Không có danh sách");
+        console.log(error);
+      }
+    }; // Dấu ngoặc nhọn này là kết thúc khai báo hàm
 
-    // Tạm thời hiển thị dữ liệu giả định để test giao diện
-    setProducts([
-      { id: 1, name: 'Cà phê sữa đá', price: 25000 },
-      { id: 2, name: 'Trà đào cam sả', price: 35000 },
-      { id: 3, name: 'Bạc xỉu', price: 29000 }
-    ]);
-  }, []);
+    // 2. Gọi hàm thực thi (phải nằm ngoài phần khai báo trên)
+    fetchProduct();
+  }, [currentPage]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token'); // Xóa vé VIP
-    window.location.reload(); // Tải lại trang để văng ra log in
+    localStorage.removeItem('token'); 
+    window.location.reload(); 
   };
 
   return (
@@ -68,6 +71,15 @@ const ProductPage = () => {
           </tbody>
         </table>
       </div>
+
+            <Pagination 
+            
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) => setCurrentPage(page)}
+
+            />
+
     </div>
   );
 };
