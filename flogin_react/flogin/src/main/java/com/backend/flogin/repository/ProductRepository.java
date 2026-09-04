@@ -11,4 +11,6 @@ import com.backend.flogin.entity.Product;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long>{
     Page<Product> findByNameContaining(String name, Pageable pageable);
+    Page<Product> findByPriceLessThanEqual(Double price, Pageable pageable);
+    Page<Product> findByNameContainingAndPriceLessThanEqual(String name, Double price, Pageable pageable);
 }

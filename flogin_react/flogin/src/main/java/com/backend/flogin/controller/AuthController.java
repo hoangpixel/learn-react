@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin("*") // Cho phép Frontend gọi mà không bị lỗi CORS
+@CrossOrigin("*")
 public class AuthController {
 
     @Autowired
@@ -51,7 +51,7 @@ public class AuthController {
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
         // 3. Đưa vào máy in vé VIP
-        String jwtToken = jwtUtils.generateToken(userDetails.getUsername());
+        String jwtToken = jwtUtils.generateToken(userDetails);
 
         // 4. Trả về cho React
         Map<String, String> response = new HashMap<>();
@@ -67,7 +67,7 @@ public class AuthController {
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole("ROLE_USER");
+        // user.setRoles("ROLE_USER");
     
         userRepository.save(user);
 

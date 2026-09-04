@@ -11,6 +11,11 @@ import java.security.Key;
 import java.util.Date;
 import java.util.function.Function;
 
+import org.springframework.security.core.GrantedAuthority;
+import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Value;
 
 @Component
@@ -26,10 +31,17 @@ public class JwtUtils {
         return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
     }
 
-    // 1. TẠO TOKEN: Thời hạn 10 tiếng (1000ms * 60s * 60m * 10h)
-    public String generateToken(String username) {
+    // 1. TẠO TOKEN: Đổi tham số từ String username -> UserDetails userDetails
+    public String generateToken(UserDetails userDetails) {
+        
+        // Móc toàn bộ quyền (ROLE_ADMIN, PRODUCT_DELETE...) từ UserDetails ra thành 1 mảng
+        List<String> authorities = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
+
         return Jwts.builder()
-                .setSubject(username)
+                .claim("authorities", authorities) // NHÉT MẢNG QUYỀN VÀO TOKEN Ở ĐÂY
+                .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)

@@ -31,22 +31,14 @@ public class ProductController {
     }
 
     @GetMapping
-    public Page<Product> layDanhSach(
-            @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "5") int size) {
-        
-        Pageable pageable = PageRequest.of(page, size);
-        return repo.findAll(pageable);
-    }
-
-    @GetMapping("/search")
     public Page<Product> getMethodName( 
         @RequestParam(name="page", defaultValue = "0") int page, 
         @RequestParam(name="size", defaultValue = "5") int size,
-        @RequestParam(name = "keyword") String keyword
+        @RequestParam(name = "keyword", required = false) String keyword,
+        @RequestParam(name = "price", required = false) Double price
     ) {
 
-        Page<Product> pageList = bus.timKiemCoBan(keyword, page, size);
+        Page<Product> pageList = bus.timKiemCoBan(keyword, price,page, size);
 
         return pageList;
     }

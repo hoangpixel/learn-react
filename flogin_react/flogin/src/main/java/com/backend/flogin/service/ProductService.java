@@ -57,9 +57,21 @@ public boolean suaSanPham(Product pMoi) {
         return repo.findById(id).orElse(null);
     }
 
-    public Page<Product> timKiemCoBan(String name, int currentPage, int size){
+    public Page<Product> timKiemCoBan(String name,Double price, int currentPage, int size){
         Sort desc = Sort.by(Sort.Direction.DESC, "id");
         Pageable pageable = PageRequest.of(currentPage, size,desc);
-        return repo.findByNameContaining(name, pageable);
+
+        boolean coChu = (name != null && !name.trim().isEmpty());
+        boolean coGia = (price != null && price > 0);
+
+        if(coChu && coGia){
+            return repo.findByNameContainingAndPriceLessThanEqual(name, price, pageable);
+        }else if(coChu){
+            return repo.findByNameContaining(name, pageable);
+        }else if(coGia){
+            return repo.findByPriceLessThanEqual(price, pageable);
+        }else{
+            return repo.findAll(pageable);
+        }
     }
 }
