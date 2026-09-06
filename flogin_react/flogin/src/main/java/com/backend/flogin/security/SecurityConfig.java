@@ -55,7 +55,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable()) // Tắt chống giả mạo vì mình xài Token rồi
             .cors(cors -> cors.configure(http)) // Mở cửa cho React cổng 5173 gọi sang
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll() // Thả cửa API đăng nhập, đăng ký
+                .requestMatchers("/api/auth/**", "/error", "/uploads/**").permitAll() // Thả cửa API đăng nhập, đăng ký
                 .anyRequest().authenticated() // Còn lại phải có vé VIP hết
             )
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Không lưu session (stateless)

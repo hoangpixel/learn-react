@@ -3,54 +3,63 @@ import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import axiosClient from '../services/axiosClient';
 
 const UpdateProductPage = () => {
-    const token = localStorage.getItem('token');
-    const navigate = useNavigate();
-    if(!token){
-        return <Navigate to="/login" />
-    }
-    
-    const { id } = useParams();
-    const [name, setName] = useState("");
-    const [price, setPrice] = useState("");
 
-    useEffect(() => {
-        const layThongTinId = async () => {
-        try{
-            const resInfo = await axiosClient.get(`/products/update/${id}`);
-            setName(resInfo.data.name);
-            setPrice(resInfo.data.price);
-        }catch(error){
-            alert("Xảy ra lỗi khi lấy thông tin sản phẩm" + error);
-            console.log(error);
+  const token = localStorage.getItem('token');
+  const navigate = useNavigate();
+  if(!token) {
+    return <Navigate to="/login" />
+  }
+
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
+  
+  const { id } = useParams();
+
+  useEffect(() => {
+    const layThongTin = async () => {
+      try {
+        const res = await axiosClient.get(`/products/update/${id}`);
+
+        if(res.data != null) {
+          setName(res.data.name);
+          setDescription(res.data.description);
+          setPrice(res.data.price);
+        } else {
+          alert("Không lấy đc thông tin sản phẩm");
         }
+      } catch (error) {
+        alert("Xảy ra lỗi khi lấy thông tin : " + error);
+        console.log(error);
+      }
     };
-            layThongTinId();
-    }, [id]);
+    layThongTin();
+  }, [id]);
 
-    const handleUpdate = async () => {
-        try {
-            const res = await axiosClient.patch("/products/update", {
-                id: Number(id),
-                name: name,
-                price: Number(price),
-            });
-
-            if (res.data === "Sửa thông tin sản phẩm thành công") {
-                alert("Sửa thông tin sản phẩm thành công");
-                navigate("/products");
-            } else {
-                alert("Sửa thông tin sản phẩm thất bại");
-            }
-        } catch (error) {
-            alert("Xảy ra lỗi khi cập nhật dữ liệu sản phẩm");
-            console.log(error);
-        }
+  const handleUpdate = async () => {
+    try {
+      const res = await axiosClient.patch("/products/update", {
+        id: Number(id),
+        name: name,
+        description: description,
+        price: Number(price)
+      });
+      if(res.data === "ok") {
+        alert("Cập nhật thông tin thành công");
+        navigate("/products");
+      } else {
+        alert("Không cập nhật được sản phẩm");
+      }
+    } catch (error) {
+      alert("Xảy ra lỗi khi cập nhật : " + error);
+      console.log(error);
     }
+  };
 
     return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 p-8">
       <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-md">
-        <h2 className="mb-6 text-center text-2xl font-bold text-blue-600">Sửa thông tin món</h2>
+        <h2 className="mb-6 text-center text-2xl font-bold text-blue-600">Sửa thông tin sản phẩm</h2>
         
         <div className="mb-4">
           <label className="mb-1 block font-semibold text-gray-700">Tên sản phẩm</label>
@@ -60,6 +69,17 @@ const UpdateProductPage = () => {
             className="w-full rounded-md border p-2 outline-none focus:border-blue-500"
             value={name}
             onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+
+        <div className="mb-5">
+          <label className="mb-1 block font-semibold text-gray-700">Mô tả</label>
+          <input 
+            type="text" 
+            placeholder="Ví dụ: ngon vãi đái"
+            className="w-full rounded-md border p-2 outline-none focus:border-blue-500"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
           />
         </div>
 

@@ -7,45 +7,99 @@ import { jwtDecode } from "jwt-decode";
 import useDebounce from '../components/useDebounce';
 
 const ProductPage = () => {
+
   const token = localStorage.getItem('token');
+  let authorities: string[] = [];
+  let username: string = "";
+
   const navigate = useNavigate();
 
-  let authorities: string[] = [];
-
-  if(!token) {
-    return <Navigate to="/login" />;
+  if(token === null) {
+    return <Navigate to="/login" />
   } else {
-    try{
-      const decode: any = jwtDecode(token);
-      authorities = decode.authorities || [];
-    }catch (error) {
-      console.log("Lỗi giải mã token", error);
-    }
+      try {
+          const decode: any = jwtDecode(token);
+          authorities = decode.authorities;
+          username = decode.sub;
+      } catch (error) {
+          console.log(error);
+          return <Navigate to="/login" />
+      }
   }
-
-// Lấy bộ công cụ thao tác với thanh URL
-  const [searchParams, setSearchParams] = useSearchParams();
-  
-  // Móc dữ liệu từ URL xuống (nếu trên link không có thì cho mặc định là 0 và chuỗi rỗng)
-  const urlPage = Number(searchParams.get('page')) || 0;
-  const urlKeyword = searchParams.get('keyword') || '';
-
-  const urlPrice = Number(searchParams.get('price')) || 0;
-
-  const [products, setProducts] = useState<Product[]>([]);
-  const [totalPages, setTotalPages] = useState(0);
-  
-  // Vẫn cần 1 state cục bộ cho ô input để lúc gõ chữ không bị load lại URL liên tục
-  const [inputKeyword, setInputKeyword] = useState(urlKeyword);
-
-  // Đặt lịch hẹn giờ 500ms
-  const debouncedKeyword = useDebounce(inputKeyword, 500);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  const [inputKeyword, setInputKeyword] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [totalPages, setTotalPages] = useState(0);
+  
+  const urlPage = Number(searchParams.get('page')) || 0;
+  const urlKeyword = searchParams.get('keyword') || "";
+  const urlPrice = Number(searchParams.get('price')) || 0;
+
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      try {
+        const res = await axiosClient.get("/products", {
+        params: {
+          page: urlPage,
+          size: 5, 
+          keyword: urlKeyword === "" ? undefined : urlKeyword,
+          price: urlPrice === 0 ? undefined : urlPrice
+        }
+      });
+
+      setProducts(res.data.content);
+      setTotalPages(res.data.totalPages);
+      
+      } catch(error) {
+        alert("Xảy ra lỗi khi cố lấy danh sách sản phẩm : " + error);
+        console.log("Xảy ra lỗi khi cố lấy danh sách sản phẩm", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [urlPage, urlKeyword, urlPrice]);
+
+  const handleDelete = async (id: number) => {
+      if(window.confirm("Chắc chưa bro?")) {
+        try {
+          const res = await axiosClient.get(`/products/delete/${id}`);
+          if(res.data === "ok") {
+            alert("Xóa thành công sản phẩm với id : " + id);
+            setProducts(products.filter((p) => p.id !== id));
+          } else {
+            alert("Xóa thất bại");
+          }
+        } catch(error) {
+          alert("Xảy ra lỗi khi xóa sản phẩm : " + error);
+          console.log(error);
+        }
+      }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    const params: Record<string, string> = {page: newPage.toString()};
+
+    if(urlKeyword !== "") {
+      params.keyword = urlKeyword;
+    }
+
+    if(urlPrice !== 0) {
+      params.price = urlPrice.toString();
+    }
+
+    setSearchParams(params);
+  };
+
+  const debouncedKeyword = useDebounce(inputKeyword, 500);
   useEffect(() => {
     if(debouncedKeyword !== urlKeyword) {
-      const params: Record<string,string> = {page : "0"};
+      const params: Record<string, string> = {page: "0"};
 
       if(debouncedKeyword.trim() !== "") {
         params.keyword = debouncedKeyword.trim();
@@ -54,105 +108,29 @@ const ProductPage = () => {
       if(urlPrice !== 0) {
         params.price = urlPrice.toString();
       }
-      
+
       setSearchParams(params);
     }
-    
   }, [debouncedKeyword]);
 
-  useEffect(() => {
-    const fetchProduct = async () => {
-      setIsLoading(true);
-        try {
-            // Nhờ Axios tự động build link URL, xóa sổ các lệnh IF
-            // Đảm bảo sếp đã gom backend về chung 1 link /search như bài trước
-            const res = await axiosClient.get("/products", {
-                params: {
-                    page: urlPage,
-                    size: 5,
-                    keyword: urlKeyword === "" ? undefined : urlKeyword, 
-                    price: urlPrice === 0 ? undefined : urlPrice
-                }
-            });
-            
-            setProducts(res.data.content);
-            setTotalPages(res.data.totalPages);
-        } catch(error) {
-            console.log(error);
-        } finally {
-          setIsLoading(false);
-        }
-    }; 
-
-    fetchProduct();
-}, [urlPage, urlKeyword, urlPrice]);
-
-// const handleXacNhanTimKiem = () => {
-//     // Chỉ định kiểu dữ liệu Record<string, string> cho object params
-//     const params: Record<string, string> = { page: "0" };
-    
-//     // Nếu ô input có chữ (đã xóa khoảng trắng thừa), mới nhét keyword vào params
-//     if (inputKeyword.trim() !== "") {
-//       params.keyword = inputKeyword.trim();
-//     }
-    
-//     if(urlPrice !== 0) {
-//       params.price = urlPrice.toString();
-//     }
-
-//     // Nếu không có keyword, URL sinh ra chỉ còn ?page=0
-//     setSearchParams(params);
-//   };
-
-const handlePageChange = (newPage: number) => {
-    const params: Record<string, string> = { page: newPage.toString() };
-    
-    // Nếu đang trong quá trình tìm kiếm, giữ nguyên keyword trên URL
-    if (urlKeyword !== "") {
-      params.keyword = urlKeyword;
-    }
-
-    if(urlPrice !== 0) {
-      params.price = urlPrice.toString();
-    }
-    
-    setSearchParams(params);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token'); 
-    window.location.reload(); 
-  };
-
-  const handleDelete = async (id: number) => {
-      if(window.confirm("Chắc chắn chưa bro???")){
-        try{
-          const resDelete = await axiosClient.delete(`/products/delete/${id}`);
-          if(resDelete.data === "Xóa sản phẩm thành công"){
-            alert("Xóa sản phẩm thành công");
-            setProducts(products.filter((p) => p.id !== id));
-          }
-        }catch(error){
-          alert("Xảy ra lỗi khi xóa sản phẩm" + error);
-          console.log(error);
-        }
-      }
-  }
-
-  const handleChonGia = (giaMoi: string) => {
-    const params: Record<string, string> = {page : "0"};
+  const handleChonGia = (newPrice: string) => {
+    const params: Record<string, string> = {page: "0"};
 
     if(urlKeyword !== "") {
       params.keyword = urlKeyword;
     }
 
-    if(giaMoi !== "") {
-      params.price = giaMoi;
+    if(newPrice !== "") {
+      params.price = newPrice;
     }
 
     setSearchParams(params);
-  }
+  };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -201,8 +179,10 @@ const handlePageChange = (newPage: number) => {
   <thead>
     <tr className="bg-gray-800 text-center text-white">
       <th className="rounded-tl-lg p-3">ID</th>
+      <th className="p-3">Hình ảnh</th>
       <th className="p-3">Tên sản phẩm</th>
       <th className="p-3">Giá</th>
+      <th className="p-3">Mô tả</th>
       <th className="rounded-tr-lg p-3">Hành động</th>
     </tr>
   </thead>
@@ -213,8 +193,10 @@ const handlePageChange = (newPage: number) => {
       [...Array(5)].map((_, index) => (
         <tr key={index} className="border-b animate-pulse">
           <td className="p-3"><div className="h-6 w-12 bg-gray-300 rounded mx-auto"></div></td>
+           <td className="p-3"><div className="h-6 w-12 bg-gray-300 rounded mx-auto"></div></td>
           <td className="p-3"><div className="h-6 w-3/4 bg-gray-300 rounded mx-auto"></div></td>
           <td className="p-3"><div className="h-6 w-1/2 bg-gray-300 rounded mx-auto"></div></td>
+           <td className="p-3"><div className="h-6 w-12 bg-gray-300 rounded mx-auto"></div></td>
           <td className="p-3 flex justify-center gap-2">
             <div className="h-10 w-16 bg-gray-300 rounded-lg"></div>
             <div className="h-10 w-16 bg-gray-300 rounded-lg"></div>
@@ -224,32 +206,47 @@ const handlePageChange = (newPage: number) => {
     ) : (
       /* Kịch bản 2: Tải xong -> Đổ data thật vào */
       products.map((p) => (
-        <tr key={p.id} className="border-b text-center hover:bg-gray-50">
-          <td className="p-3">{p.id}</td>
+
+        <tr key={p.id} className='border-b text-center hover:bg-gray-50'>
+          <td className="p-3 font-semibold">{p.id}</td>
+
+          <td className="p-3 flex justify-center">
+            {p.imageUrl ? (
+              <img 
+                // Gọi thẳng tới cổng 8080 của Spring Boot kèm theo tên file
+                src={`http://localhost:8080/uploads/${p.imageUrl}`} 
+                alt={p.name} 
+                className="h-16 w-16 object-cover rounded-md shadow-sm border border-gray-200"
+              />
+            ) : (
+              // Nếu món nào chưa có ảnh thì hiện cục xám báo hiệu
+              <div className="h-16 w-16 bg-gray-100 flex items-center justify-center rounded-md border border-gray-200 text-xs text-gray-400">
+                No Image
+              </div>
+            )}
+          </td>
+
           <td className="p-3 font-semibold">{p.name}</td>
-          <td className="p-3 text-red-500">{p.price.toLocaleString()} VNĐ</td>
+          <td className="p-3 font-semibold">{p.description}</td>
+          <td className="p-3 font-bold text-red-500">{p.price}</td>
           <td className="flex justify-center gap-2 p-3">
-            
-            {authorities.includes("PRODUCT_UPDATE") && (
-              <button 
+              {authorities.includes("PRODUCT_UPDATE") && (
+                <button
                 className="w-1/2 rounded-lg bg-blue-500 px-3 py-2 font-bold text-white hover:bg-blue-600"
                 onClick={() => navigate(`/products/update/${p.id}`)}
-              >
-                Sửa
-              </button>
-            )}
-            
-            {authorities.includes("PRODUCT_DELETE") && (
-              <button 
+                >Sửa</button>
+              )}
+              {authorities.includes("PRODUCT_DELETE") && (
+                <button
                 className="w-1/2 rounded-lg bg-red-500 px-3 py-2 font-bold text-white hover:bg-red-600"
                 onClick={() => handleDelete(p.id)}
-              >
-                Xóa
-              </button>
-            )}
-
+                >
+                  Xóa
+                </button>
+              )}
           </td>
         </tr>
+
       ))
     )}
   </tbody>

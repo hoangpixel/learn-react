@@ -7,39 +7,68 @@ const AddProductPage = () => {
   if (!token) return <Navigate to="/login" />;
 
   const navigate = useNavigate();
-  const [name, setName] = useState('');
-  const [price, setPrice] = useState('');
 
-    const handleSave = async () => {
-    if (!name) {
-      alert('Không được để trống tên!');
-      return;
-    }
+  const [productData, setProductData] = useState({
+    name: "",
+    price: "",
+    description: ""
+  });
 
-    if (!price) {
-      alert("Không được để trống giá!");
-      return;
-    }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setProductData({
+      ...productData, // Thằng này để giữ nguyên nhứng thằng khác
+      [name]: value // ghi đè lên giá trị mới đúng cái trường đang được gõ
+    });
+  };
 
-    try {
-      const res = await axiosClient.post('/products/add', {
-        name: name,
-        price: Number(price)
-      });
+  const [errors, setErrors] = useState<Record<string,string>>({});
 
-      // So sánh trực tiếp với câu chữ Backend trả về
-      if (res.data === "Thêm sản phẩm thành công") {
-        alert("Thêm sản phẩm thành công!");
-        navigate("/products");
-      } else {
-        alert("Thêm sản phẩm thất bại từ phía máy chủ!");
-      }
+  // Upload file và Preview Ảnh
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-    } catch (error) {
-      alert("Đã xảy ra lỗi kết nối: " + error);
-      console.log(error);
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if(file) {
+      setImageFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
     }
   }
+
+
+const handleSave = async () => {
+    // 1. Dọn dẹp sạch sẽ mảng lỗi cũ trước khi gửi request mới
+    setErrors({});
+
+    const formData = new FormData();
+    formData.append("name", productData.name);
+    formData.append("description", productData.description);
+    formData.append("price", productData.price.toString());
+    
+  if(imageFile) {
+    formData.append("image", imageFile);
+  }
+
+    try {
+        await axiosClient.post("/products/add", formData, {
+    headers: {
+        'Content-Type': 'multipart/form-data' // Báo cho server biết đây là gói hàng chứa file
+    }
+});
+        alert("Thêm thành công!");
+        navigate('/products');
+    } catch (error: any) {
+        if (error.response) {
+            if (error.response.status === 400) {
+                setErrors(error.response.data); 
+            } else if (error.response.status === 500) {
+                // 2. Báo động ngay nếu bị 500
+                alert("Lỗi 500: Server sập! Mở console Spring Boot xem có phải lỗi trùng tên không.");
+            }
+        }
+    }
+};
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 p-8">
@@ -52,8 +81,22 @@ const AddProductPage = () => {
             type="text"
             placeholder="Ví dụ: Cà phê sữa đá"
             className="w-full rounded-md border p-2 outline-none focus:border-blue-500"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            name="name"
+            value={productData.name}
+            onChange={handleInputChange}
+          />
+          {errors.name && <span className="text-sm font-semibold text-red-500">{errors.name}</span>}
+        </div>
+
+        <div className="mb-5">
+          <label className="mb-1 block font-semibold text-gray-700">Mô tả</label>
+          <input 
+            type="text" 
+            placeholder="Ví dụ: ngon vãi đái"
+            className="w-full rounded-md border p-2 outline-none focus:border-blue-500"
+            name="description"
+            value={productData.description}
+            onChange={handleInputChange}
           />
         </div>
 
@@ -63,10 +106,33 @@ const AddProductPage = () => {
             type="number"
             placeholder="Ví dụ: 25000"
             className="w-full rounded-md border p-2 outline-none focus:border-blue-500"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
+            name="price"
+            value={productData.price}
+            onChange={handleInputChange}
           />
+          {errors.price && <span className="text-sm font-semibold text-red-500">{errors.price}</span>}
         </div>
+
+        <div className="mb-8">
+    <label className="mb-1 block font-semibold text-gray-700">Hình ảnh sản phẩm</label>
+    <input
+        type="file"
+        accept="image/*"
+        onChange={handleImageChange}
+        className="w-full rounded-md border p-2 outline-none focus:border-blue-500"
+    />
+    
+    {previewUrl && (
+        <div className="mt-4 border p-2 w-max bg-gray-50 rounded">
+            <p className="text-sm text-gray-500 mb-2">Xem trước:</p>
+            <img 
+                src={previewUrl} 
+                alt="Preview" 
+                className="h-40 w-40 object-cover rounded-md border border-gray-300 shadow-sm" 
+            />
+        </div>
+    )}
+</div>
 
         <div className="flex space-x-4">
           <button
